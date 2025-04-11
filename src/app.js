@@ -37,10 +37,20 @@ app.use('/api/prodi', prodiRoutes);
 app.use('/api/ruangan', ruanganRoutes);
 app.use('/api/scan', scanRoutes);
 
-// Middleware untuk menangani endpoint yang tidak ditemukan
+// Middleware untuk endpoint tidak ditemukan
 app.use((req, res) => {
   res.status(404).json({ status: 'error', message: 'Endpoint tidak ditemukan' });
 });
 
+// Middleware error handler
 app.use(errorHandler);
+
+// Jalankan server jika lokal
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`✅ Server berjalan di http://localhost:${PORT}`);
+  });
+}
+
 module.exports = app;
