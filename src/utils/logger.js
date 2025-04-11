@@ -1,0 +1,12 @@
+// src/utils/logger.js
+
+/**
+ * Middleware untuk mencatat setiap request yang masuk.
+ */
+function logger(req, res, next) {
+  const now = new Date().toISOString();
+  console.log(`[${now}] ${req.method} ${req.originalUrl}`);
+  next();
+}
+
+module.exports = logger;
