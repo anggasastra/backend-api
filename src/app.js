@@ -4,20 +4,20 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
-const logger = require('./src/utils/logger');
-const errorHandler = require('./src/middleware/errorHandler');
+const logger = require('./utils/logger');
+const errorHandler = require('./middleware/errorHandler');
 
 // Import route files
-const authRoutes = require('./src/routes/auth');
-const absensiRoutes = require('./src/routes/absensi');
-const mahasiswaRoutes = require('./src/routes/mahasiswa');
-const jadwalRoutes = require('./src/routes/jadwal');
-const laporanRoutes = require('./src/routes/laporan');
-const dosenRoutes = require('./src/routes/dosen');
-const mataKuliahRoutes = require('./src/routes/mata-kuliah');
-const prodiRoutes = require('./src/routes/prodi');
-const ruanganRoutes = require('./src/routes/ruangan');
-const scanRoutes = require('./src/routes/scan');
+const authRoutes = require('./routes/auth');
+const absensiRoutes = require('./routes/absensi');
+const mahasiswaRoutes = require('./routes/mahasiswa');
+const jadwalRoutes = require('./routes/jadwal');
+const laporanRoutes = require('./routes/laporan');
+const dosenRoutes = require('./routes/dosen');
+const mataKuliahRoutes = require('./routes/mata-kuliah');
+const prodiRoutes = require('./routes/prodi');
+const ruanganRoutes = require('./routes/ruangan');
+const scanRoutes = require('./routes/scan');
 
 const app = express();
 
