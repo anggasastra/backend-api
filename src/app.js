@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const db = require('./config/db');
 
 dotenv.config();
 
@@ -46,6 +47,20 @@ app.use((req, res, next) => {
     message: 'Endpoint tidak ditemukan'
   });
 });
+
+// Tes koneksi dan route simple
+const PORT = process.env.PORT || 3000;
+app.get('/', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT 1');
+    res.send('Database connected!');
+  } catch (err) {
+    console.error('Database error:', err.message);
+    res.status(500).send('Database error: ' + err.message);
+  }
+});
+
+console.log("JWT_SECRET:", process.env.JWT_SECRET); // <== debug
 
 app.use(errorHandler);
 
