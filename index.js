@@ -10,21 +10,10 @@ app.use(express.json());
 app.get('/', async (req, res) => {
   try {
     const [rows] = await db.query('SELECT 1');
-    res.send('Connected to MySQL!');
+    res.send('Database connected!');
   } catch (err) {
-    console.error('Database connection error:', err);
-    res.status(500).send('Database error');
-  }
-});
-
-// Contoh endpoint: ambil semua user
-app.get('/users', async (req, res) => {
-  try {
-    const [users] = await db.query('SELECT * FROM users');
-    res.json(users);
-  } catch (err) {
-    console.error('Query error:', err);
-    res.status(500).json({ error: 'Failed to fetch users' });
+    console.error('Database error:', err.message);
+    res.status(500).send('Database error: ' + err.message);
   }
 });
 
