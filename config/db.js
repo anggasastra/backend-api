@@ -5,6 +5,7 @@ const { URL } = require('url');
 dotenv.config();
 
 const dbUrl = new URL(process.env.DB_URL);
+console.log('DB_URL:', process.env.DB_URL); // Debugging DB_URL
 
 const db= mysql.createPool({
   host: dbUrl.hostname,
