@@ -1,37 +1,36 @@
 const { successResponse, errorResponse } = require('../utils/responseHelper');
 
 // Penyimpanan sementara di memory
-const latestScans = {};  // Key: deviceId, Value: { uid, deviceId, timestamp }
+let latestScan = {};  // Menyimpan scan terakhir berdasarkan uid
 
+// Menyimpan scan
 exports.saveScan = async (req, res) => {
-  const { uid, deviceId, timestamp } = req.body;
+  const { uid, timestamp } = req.body;
 
-  if (!uid || !deviceId || !timestamp) {
+  // Cek apakah data lengkap
+  if (!uid || !timestamp) {
     return res.status(400).json(errorResponse('Data tidak lengkap'));
   }
 
-  // Simpan di memory
-  latestScans[deviceId] = { uid, deviceId, timestamp };
+  // Simpan data scan terakhir berdasarkan uid
+  latestScan = { uid, timestamp };
 
+  // Kirim response sukses
   return res.status(200).json(successResponse('Scan berhasil disimpan'));
 };
 
-exports.getLatestScanByDevice = async (req, res) => {
-  const { deviceId } = req.params;
-
-  if (!deviceId) {
-    return res.status(400).json(errorResponse('Device ID diperlukan'));
+// Mendapatkan scan terakhir yang masuk (terakhir berdasarkan uid)
+exports.getLatestScan = async (req, res) => {
+  // Cek apakah ada data scan yang sudah tersimpan
+  if (!latestScan.uid) {
+    return res.status(404).json(errorResponse('Belum ada data scan'));
   }
 
-  const data = latestScans[deviceId];
-  if (!data) {
-    return res.status(404).json(errorResponse('Belum ada data scan untuk device ini'));
-  }
-
-  return res.status(200).json(successResponse('Data scan ditemukan', data));
+  // Kirim response sukses dengan data scan terakhir
+  return res.status(200).json(successResponse('Data scan terakhir ditemukan', latestScan));
 };
 
-// Optional: untuk menghapus setelah diproses
-exports.clearScan = (deviceId) => {
-  delete latestScans[deviceId];
+// Optional: untuk menghapus scan setelah diproses
+exports.clearScan = () => {
+  latestScan = {}; // Reset scan
 };
