@@ -3,6 +3,6 @@ const router = express.Router();
 const scanController = require('../controllers/scanController');
 
 router.post('/', scanController.saveScan);
-router.get('/:deviceId', scanController.getLatestScanByDevice);
+router.get('/', scanController.getLatestScanByDevice);
 
 module.exports = router;
