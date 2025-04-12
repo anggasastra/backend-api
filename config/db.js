@@ -4,10 +4,9 @@ const { URL } = require('url');
 
 dotenv.config();
 
-// Parse DB_URL
 const dbUrl = new URL(process.env.DB_URL);
 
-const pool = mysql.createPool({
+const db= mysql.createPool({
   host: dbUrl.hostname,
   user: dbUrl.username,
   password: dbUrl.password,
@@ -18,4 +17,4 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-module.exports = pool;
+module.exports = db;
