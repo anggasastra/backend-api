@@ -1,7 +1,6 @@
 const mysql = require('mysql2/promise');
 const dotenv = require('dotenv');
 const { URL } = require('url');
-
 dotenv.config();
 
 const dbUrl = new URL(process.env.DB_URL);
