@@ -38,6 +38,7 @@ exports.login = async (req, res) => {
     };
 
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+    console.log("JWT dari env:", process.env.JWT_SECRET);
 
     return res.status(200).json(successResponse('Login berhasil', {
       token,

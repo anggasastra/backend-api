@@ -17,6 +17,8 @@ app.get('/', async (req, res) => {
   }
 });
 
+console.log("JWT_SECRET:", process.env.JWT_SECRET); // <== debug
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

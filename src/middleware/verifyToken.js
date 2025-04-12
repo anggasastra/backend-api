@@ -21,4 +21,6 @@ module.exports = (req, res, next) => {
     req.user = decoded;
     next();
   });
+console.log("JWT dari env:", process.env.JWT_SECRET);
+
 };
