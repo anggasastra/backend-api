@@ -49,7 +49,6 @@ app.use((req, res, next) => {
 });
 
 // Tes koneksi dan route simple
-const PORT = process.env.PORT || 3000;
 app.get('/', async (req, res) => {
   try {
     const [rows] = await db.query('SELECT 1');
@@ -60,7 +59,7 @@ app.get('/', async (req, res) => {
   }
 });
 
-console.log("JWT_SECRET:", process.env.JWT_SECRET); // <== debug
+console.log("JWT_SECRET:", process.env.JWT_SECRET);
 
 app.use(errorHandler);
 
