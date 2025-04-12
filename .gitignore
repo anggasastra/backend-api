@@ -1,27 +1,3 @@
-# Node modules
-node_modules/
-
 # Env files
 .env
-.env.local
 
-# Log files
-*.log
-
-# Vercel config
-.vercel
-
-# System files
-.DS_Store
-Thumbs.db
-
-# Database or temp files
-*.sqlite
-*.sqlite3
-*.db
-*.bak
-*.tmp
-
-# IDE/editor folders
-.vscode/
-.idea/

@@ -18,6 +18,7 @@ const mataKuliahRoutes = require('./routes/mata-kuliah');
 const prodiRoutes = require('./routes/prodi');
 const ruanganRoutes = require('./routes/ruangan');
 const scanRoutes = require('./routes/scan');
+const dbRoutes = require('./routes/db');
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use('/api/mata-kuliah', mataKuliahRoutes);
 app.use('/api/prodi', prodiRoutes);
 app.use('/api/ruangan', ruanganRoutes);
 app.use('/api/scan', scanRoutes);
+app.use('/api/db', dbRoutes);
 
 // Middleware untuk endpoint tidak ditemukan
 app.use((req, res, next) => {
