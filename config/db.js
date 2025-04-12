@@ -1,18 +1,14 @@
 const mysql = require('mysql2/promise');
 const dotenv = require('dotenv');
-const { URL } = require('url');
 
 dotenv.config();
 
-const dbUrl = new URL(process.env.DB_URL);
-console.log('DB_URL:', process.env.DB_URL); // Debugging DB_URL
-
-const db= mysql.createPool({
-  host: dbUrl.hostname,
-  user: dbUrl.username,
-  password: dbUrl.password,
-  database: dbUrl.pathname.substring(1),
-  port: dbUrl.port,
+const db = mysql.createPool({
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
