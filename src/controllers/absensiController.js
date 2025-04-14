@@ -9,6 +9,7 @@ exports.getAllAbsensi = async (req, res) => {
     console.error('Error getAllAbsensi:', error);
     return res.status(500).json(errorResponse('Internal server error'));
   }
+};
 
 exports.submitAbsensi = async (req, res) => {
   const { uid, deviceId, timestamp } = req.body;
