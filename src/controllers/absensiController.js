@@ -1,6 +1,15 @@
 const { Mahasiswa, Jadwal, Absensi } = require('../models');
 const { successResponse, errorResponse } = require('../utils/responseHelper');
 
+exports.getAllAbsensi = async (req, res) => {
+  try {
+    const absensiData = await Absensi.getAll();
+    return res.status(200).json(successResponse('Data absensi berhasil diambil', absensiData));
+  } catch (error) {
+    console.error('Error getAllAbsensi:', error);
+    return res.status(500).json(errorResponse('Internal server error'));
+  }
+
 exports.submitAbsensi = async (req, res) => {
   const { uid, deviceId, timestamp } = req.body;
 

@@ -1,6 +1,11 @@
 const db = require('../../config/db');
 
 const Absensi = {
+  getAll: async () => {
+    const [rows] = await db.query("SELECT * FROM absensi");
+    return rows;
+  }
+
   create: async (data) => {
     const [result] = await db.query(
       `INSERT INTO absensi (mahasiswa_id, jadwal_id, check_in, status)
