@@ -5,8 +5,20 @@ const { successResponse, errorResponse } = require('../utils/responseHelper');
 exports.getLaporan = async (req, res) => {
   const { tanggal, ruangan, mahasiswa_id } = req.query;
   let sql = `
-    SELECT a.id, m.nama AS mahasiswa, j.mata_kuliah, j.ruangan_id AS ruangan,
-           a.check_in, a.status AS status_absensi
+    SELECT 
+      a.id,
+      m.nama AS mahasiswa,
+      j.kode_mk,
+      j.nama_mk,
+      j.ruangan_id,
+      j.dosen_id,
+      j.prodi_id,
+      j.semester_id,
+      j.hari,
+      j.jam_mulai,
+      j.jam_selesai,
+      a.check_in,
+      a.status AS status_absensi
     FROM absensi a
     JOIN mahasiswa m ON a.mahasiswa_id = m.id
     JOIN jadwal_kelas j ON a.jadwal_id = j.id
