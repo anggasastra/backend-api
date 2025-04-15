@@ -8,12 +8,12 @@ module.exports = {
   },
 
   create: async ({ id, nama}) => {
-    const [result] = await db.query("INSERT INTO ruangan (id, nama_ruangan) VALUES (?, ?)", [id, nama]);
+    const [result] = await db.query("INSERT INTO ruangan (id, nama) VALUES (?, ?)", [id, nama]);
     return { id, nama };
   },
 
   update: async (id, { nama }) => {
-    await db.query("UPDATE ruangan SET nama_ruangan = ? WHERE id = ?", [nama, id]);
+    await db.query("UPDATE ruangan SET nama = ? WHERE id = ?", [nama, id]);
     return { id, nama };
   },
 

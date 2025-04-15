@@ -1,10 +1,6 @@
 const db = require('../../config/db');
 
 const Absensi = {
-  getAll: async () => {
-    const [rows] = await db.query("SELECT * FROM absensi");
-    return rows;
-  },
 
   create: async (data) => {
     const [result] = await db.query(
@@ -30,6 +26,21 @@ const Absensi = {
       `UPDATE absensi SET check_out = ?, modified_by = ? WHERE id = ?`,
       [check_out, modified_by, id]
     );
+  },
+
+  getLatest: async () => {
+    const [rows] = await db.query(`
+      SELECT 
+        a.id, a.mahasiswa_id, a.jadwal_id, a.check_in, a.check_out, a.status,
+        m.nim, m.nama AS nama_mahasiswa,
+        j.nama_mk, j.ruangan_id
+      FROM absensi a
+      JOIN mahasiswa m ON a.mahasiswa_id = m.id
+      JOIN jadwal_kelas j ON a.jadwal_id = j.id
+      ORDER BY a.check_in DESC
+      LIMIT 10
+    `);
+    return rows;
   }
 };
 

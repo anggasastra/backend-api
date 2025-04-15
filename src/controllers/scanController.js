@@ -31,6 +31,10 @@ exports.getLatestScan = async (req, res) => {
 };
 
 // Optional: untuk menghapus scan setelah diproses
-exports.clearScan = () => {
-  latestScan = {}; // Reset scan
+exports.clearScan = async (req, res) => {
+  if (!latestScan.uid) {
+    return res.status(404).json(errorResponse('Tidak ada data scan untuk dihapus'));
+  }
+  latestScan = {};
+  return res.status(200).json(successResponse('Scan berhasil dihapus'));
 };

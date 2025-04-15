@@ -6,6 +6,5 @@ const authController = require('../controllers/authController');
 // Route untuk login admin dan mendapatkan token JWT.
 router.post('/login', authController.login);
 router.post('/register', authController.register);
-console.log("JWT dari env:", process.env.JWT_SECRET);
 
 module.exports = router;
