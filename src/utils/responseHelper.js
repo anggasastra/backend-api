@@ -8,7 +8,7 @@
  */
 function successResponse(message, data) {
   return {
-    //status: 'success',
+    status: 'success',
     message,
     data
   };
@@ -21,7 +21,7 @@ function successResponse(message, data) {
  */
 function errorResponse(message) {
   return {
-    //status: 'error',
+    status: 'error',
     message
   };
 }
