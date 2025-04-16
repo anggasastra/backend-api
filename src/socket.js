@@ -25,7 +25,14 @@ function broadcastUID(uid) {
   }
 }
 
+function broadcastAbsensiData(absensiData) {
+  if (io) {
+    io.emit("absensiBerhasil", absensiData);
+  }
+}
+
 module.exports = {
   setupWebSocket,
-  broadcastUID
+  broadcastUID,
+  broadcastAbsensiData
 };

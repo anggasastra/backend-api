@@ -1,5 +1,6 @@
 const { Mahasiswa, Jadwal, Absensi } = require('../models');
 const { successResponse, errorResponse } = require('../utils/responseHelper');
+const { broadcastAbsensiData } = require('../socket');
 
 exports.submitAbsensi = async (req, res) => {
   const { uid, deviceId, timestamp } = req.body;
@@ -58,10 +59,15 @@ exports.submitAbsensi = async (req, res) => {
         modified_by: null // sistem, tidak diedit oleh user
       });
       console.log('[CHECK-OUT] Berhasil untuk:', mahasiswa.nama);
-      return res.status(200).json(successResponse('Berhasil check-out', {
+      onst absensiData = {
         nama: mahasiswa.nama,
-        waktu: timestamp
-      }));
+        status: 'checkout',
+        waktu: timestamp,
+        jenis: 'check-out',
+        mata_kuliah: jadwalAktif.nama_mk
+      };
+      broadcastAbsensiData(absensiData);
+      return res.status(200).json(successResponse('Berhasil check-out', absensiData));
     } else {
       const jamMulai = new Date(`${tanggalStr}T${jadwalAktif.jam_mulai}`);
       const status = (waktuScan <= new Date(jamMulai.getTime() + 15 * 60 * 1000)) ? 'ontime' : 'late';
@@ -75,11 +81,15 @@ exports.submitAbsensi = async (req, res) => {
       });
 
       console.log('[CHECK-IN] Status:', status, '| ID:', absensi.id);
-      return res.status(200).json(successResponse('Berhasil check-in', {
+      const absensiData = {
         nama: mahasiswa.nama,
         status,
-        waktu: timestamp
-      }));
+        waktu: timestamp,
+        jenis: 'check-in',
+        mata_kuliah: jadwalAktif.nama_mk
+      };
+    broadcastAbsensiData(absensiData);
+    return res.status(200).json(successResponse('Berhasil check-in', absensiData));
     }
 
   } catch (error) {
