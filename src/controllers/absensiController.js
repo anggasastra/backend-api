@@ -59,7 +59,7 @@ exports.submitAbsensi = async (req, res) => {
         modified_by: null // sistem, tidak diedit oleh user
       });
       console.log('[CHECK-OUT] Berhasil untuk:', mahasiswa.nama);
-      onst absensiData = {
+      const absensiData = {
         nama: mahasiswa.nama,
         status: 'checkout',
         waktu: timestamp,
