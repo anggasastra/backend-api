@@ -16,7 +16,7 @@ exports.getMahasiswa = async (req, res) => {
 exports.getTotalMahasiswa = async (req, res) => {
   try {
     const total = await Mahasiswa.getTotal();
-    return res.status(200).json(successResponse('Total mahasiswa berhasil diambil', total));
+    return res.status(200).json(successResponse('Total mahasiswa berhasil diambil', {total}));
   } catch (error) {
     console.error('Error getTotalMahasiswa:', error);
     return res.status(500).json(errorResponse('Internal server error'));
