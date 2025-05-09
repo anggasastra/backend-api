@@ -41,13 +41,16 @@ const Absensi = {
       LIMIT 10
     `);
     return rows;
-  }
+  },
 
   getTotal: async () => {
-    const [rows] = await db.query("SELECT COUNT(*) as total FROM absensi WHERE DATE(check_in) = CURDATE()");
-    return rows[0].total;
+    const [rows] = await db.query(`
+      SELECT COUNT(*) AS total
+      FROM absensi
+      WHERE DATE(check_in) = CURDATE()
+    `);
+    return rows[0];
   }
-
 };
 
 module.exports = Absensi;
