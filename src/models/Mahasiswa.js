@@ -28,7 +28,7 @@ module.exports = {
 
   getTotal: async () => {
     const [rows] = await db.query("SELECT COUNT(*) AS total FROM mahasiswa");
-    return rows[0];
+    return rows[0].total;
   },
 
   create: async ({ nama, nim, uid, prodi_id, semester_id }) => {

@@ -7,7 +7,6 @@ dotenv.config();
 const logger = require('./utils/logger');
 const errorHandler = require('./middleware/errorHandler');
 
-// Import route files
 const authRoutes = require('./routes/auth');
 const absensiRoutes = require('./routes/absensi');
 const mahasiswaRoutes = require('./routes/mahasiswa');
@@ -29,7 +28,6 @@ app.use(cors());
 app.use(express.json());
 app.use(logger);
 
-// Daftarkan route sesuai dengan base path-nya
 app.use('/api/auth', authRoutes);
 app.use('/api/absensi', absensiRoutes);
 app.use('/api/mahasiswa', mahasiswaRoutes);

@@ -37,8 +37,8 @@ const Absensi = {
       FROM absensi a
       JOIN mahasiswa m ON a.mahasiswa_id = m.id
       JOIN jadwal_kelas j ON a.jadwal_id = j.id
+      WHERE DATE(a.check_in) = CURDATE()
       ORDER BY a.check_in DESC
-      LIMIT 10
     `);
     return rows;
   },

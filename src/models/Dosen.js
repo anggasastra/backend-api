@@ -21,7 +21,12 @@ module.exports = {
   },
 
   getTotal: async () => {
-    const [rows] = await db.query("SELECT COUNT(*) AS total FROM dosen");
-    return rows[0].total;
+    try {
+      const [rows] = await db.query("SELECT COUNT(*) AS total FROM dosen");
+      return rows[0].total;
+    } catch (error) {
+      console.error("Gagal mengambil total dosen:", error);
+      throw error;
+    }
   }
 };
