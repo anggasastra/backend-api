@@ -32,8 +32,8 @@ const Absensi = {
     const [rows] = await db.query(`
       SELECT 
         a.id, a.mahasiswa_id, a.jadwal_id, a.check_in, a.check_out, a.status,
-        m.nim, m.nama AS nama_mahasiswa,
-        j.nama_mk, j.ruangan_id
+        m.nim, m.nama AS nama,
+        j.nama_mk, j.ruangan_id, j.hari
       FROM absensi a
       JOIN mahasiswa m ON a.mahasiswa_id = m.id
       JOIN jadwal_kelas j ON a.jadwal_id = j.id
