@@ -2,8 +2,16 @@ const app = require('./src/app');
 const db = require('./config/db');
 require('dotenv').config();
 
+const http = require('http');
+const { setupWebSocket } = require('./src/socket');
 
-// Tes koneksi dan route simple
+// Buat server HTTP manual
+const server = http.createServer(app);
+
+// Setup WebSocket
+setupWebSocket(server);
+
+// Tes koneksi DB
 app.get('/', async (req, res) => {
   try {
     const [rows] = await db.query('SELECT 1');
@@ -15,6 +23,6 @@ app.get('/', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

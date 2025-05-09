@@ -48,3 +48,13 @@ exports.deleteRuangan = async (req, res) => {
     return res.status(500).json(errorResponse('Internal server error'));
   }
 };
+
+exports.getTotalRuangan = async (req, res) => {
+  try {
+    const total = await Ruangan.getTotal();
+    return res.status(200).json(successResponse('Total ruangan berhasil dihitung', { total }));
+  } catch (error) {
+    console.error('Error getTotalRuangan:', error);
+    return res.status(500).json(errorResponse('Internal server error'));
+  }
+};

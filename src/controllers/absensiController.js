@@ -1,15 +1,6 @@
 const { Mahasiswa, Jadwal, Absensi } = require('../models');
 const { successResponse, errorResponse } = require('../utils/responseHelper');
-
-exports.getAllAbsensi = async (req, res) => {
-  try {
-    const absensiData = await Absensi.getAll();
-    return res.status(200).json(successResponse('Data absensi berhasil diambil', absensiData));
-  } catch (error) {
-    console.error('Error getAllAbsensi:', error);
-    return res.status(500).json(errorResponse('Internal server error'));
-  }
-};
+const { broadcastAbsensiData } = require('../socket');
 
 exports.submitAbsensi = async (req, res) => {
   const { uid, deviceId, timestamp } = req.body;
@@ -68,10 +59,15 @@ exports.submitAbsensi = async (req, res) => {
         modified_by: null // sistem, tidak diedit oleh user
       });
       console.log('[CHECK-OUT] Berhasil untuk:', mahasiswa.nama);
-      return res.status(200).json(successResponse('Berhasil check-out', {
+      const absensiData = {
         nama: mahasiswa.nama,
-        waktu: timestamp
-      }));
+        status: 'checkout',
+        waktu: timestamp,
+        jenis: 'check-out',
+        mata_kuliah: jadwalAktif.nama_mk
+      };
+      broadcastAbsensiData(absensiData);
+      return res.status(200).json(successResponse('Berhasil check-out', absensiData));
     } else {
       const jamMulai = new Date(`${tanggalStr}T${jadwalAktif.jam_mulai}`);
       const status = (waktuScan <= new Date(jamMulai.getTime() + 15 * 60 * 1000)) ? 'ontime' : 'late';
@@ -85,15 +81,39 @@ exports.submitAbsensi = async (req, res) => {
       });
 
       console.log('[CHECK-IN] Status:', status, '| ID:', absensi.id);
-      return res.status(200).json(successResponse('Berhasil check-in', {
+      const absensiData = {
         nama: mahasiswa.nama,
         status,
-        waktu: timestamp
-      }));
+        waktu: timestamp,
+        jenis: 'check-in',
+        mata_kuliah: jadwalAktif.nama_mk
+      };
+    broadcastAbsensiData(absensiData);
+    return res.status(200).json(successResponse('Berhasil check-in', absensiData));
     }
 
   } catch (error) {
     console.error('[ERROR] submitAbsensi:', error);
     return res.status(500).json(errorResponse('Server error'));
+  }
+};
+
+exports.getAbsensi = async (req, res) => {
+  try {
+    const data = await Absensi.getLatest();
+    return res.status(200).json(successResponse('Data absensi terbaru berhasil diambil', data));
+  } catch (error) {
+    console.error('[ERROR] getAbsensiTerbaru:', error);
+    return res.status(500).json(errorResponse('Gagal mengambil data absensi terbaru'));
+  }
+};
+
+exports.getTotalAbsen = async (req, res) => {
+  try {
+    const total = await Absensi.getTotal();
+    return res.status(200).json(successResponse('Total absensi hari ini berhasil diambil', total));
+  } catch (error) {
+    console.error('[ERROR] getTotalAbsen:', error);
+    return res.status(500).json(errorResponse('Gagal mengambil total absensi hari ini'));
   }
 };

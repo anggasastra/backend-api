@@ -48,3 +48,13 @@ exports.deleteDosen = async (req, res) => {
     return res.status(500).json(errorResponse('Internal server error'));
   }
 };
+
+exports.getTotalDosen = async (req, res) => {
+  try {
+    const total = await Dosen.getTotal();
+    return res.status(200).json(successResponse('Total dosen = ', { total }));
+  } catch (error) {
+    console.error('Error getTotalDosen:', error);
+    return res.status(500).json(errorResponse('Internal server error'));
+  }
+};

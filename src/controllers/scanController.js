@@ -1,4 +1,5 @@
 const { successResponse, errorResponse } = require('../utils/responseHelper');
+const { broadcastUID } = require('../socket');
 
 // Penyimpanan sementara di memory
 let latestScan = {};  // Menyimpan scan terakhir berdasarkan uid
@@ -7,15 +8,14 @@ let latestScan = {};  // Menyimpan scan terakhir berdasarkan uid
 exports.saveScan = async (req, res) => {
   const { uid, timestamp } = req.body;
 
-  // Cek apakah data lengkap
   if (!uid || !timestamp) {
     return res.status(400).json(errorResponse('Data tidak lengkap'));
   }
 
-  // Simpan data scan terakhir berdasarkan uid
   latestScan = { uid, timestamp };
 
-  // Kirim response sukses
+  broadcastUID(uid);
+
   return res.status(200).json(successResponse('Scan berhasil disimpan'));
 };
 
@@ -31,6 +31,10 @@ exports.getLatestScan = async (req, res) => {
 };
 
 // Optional: untuk menghapus scan setelah diproses
-exports.clearScan = () => {
-  latestScan = {}; // Reset scan
+exports.clearScan = async (req, res) => {
+  if (!latestScan.uid) {
+    return res.status(404).json(errorResponse('Tidak ada data scan untuk dihapus'));
+  }
+  latestScan = {};
+  return res.status(200).json(successResponse('Scan berhasil dihapus'));
 };
