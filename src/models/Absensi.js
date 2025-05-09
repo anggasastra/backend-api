@@ -44,13 +44,10 @@ const Absensi = {
   }
 
   getTotal: async () => {
-    const [rows] = await db.query(`
-      SELECT COUNT(*) AS total
-      FROM absensi
-      WHERE DATE(check_in) = CURDATE()
-    `);
-    return rows[0];
+    const [rows] = await db.query("SELECT COUNT(*) as total FROM absensi WHERE DATE(check_in) = CURDATE()");
+    return rows[0].total;
   }
+
 };
 
 module.exports = Absensi;
