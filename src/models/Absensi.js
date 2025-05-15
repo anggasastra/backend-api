@@ -1,12 +1,13 @@
+
 const db = require('../../config/db');
 
 const Absensi = {
 
   create: async (data) => {
     const [result] = await db.query(
-      `INSERT INTO absensi (mahasiswa_id, jadwal_id, check_in, status)
-       VALUES (?, ?, ?, ?)`,
-      [data.mahasiswa_id, data.jadwal_id, data.check_in, data.status]
+      `INSERT INTO absensi (mahasiswa_id, jadwal_id, check_in, status, modified_by)
+       VALUES (?, ?, ?, ?, ?)`,
+      [data.mahasiswa_id, data.jadwal_id, data.check_in, data.status, data.modified_by]
     );
     return { id: result.insertId };
   },

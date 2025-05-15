@@ -1,3 +1,4 @@
+// controllers/mataKuliahController.js
 const MataKuliah = require('../models/MataKuliah');
 const { successResponse, errorResponse } = require('../utils/responseHelper');
 
@@ -12,13 +13,13 @@ exports.getAllMataKuliah = async (req, res) => {
 };
 
 exports.createMataKuliah = async (req, res) => {
-  const { kode_mk, sks, prodi_id, semester_id } = req.body;
-  if (!kode_mk || ! || !sks || !prodi_id || !semester_id) {
+  const { kode_mk, nama_mk, sks, prodi_id, semester_id } = req.body;
+  if (!kode_mk || !nama_mk || !sks || !prodi_id || !semester_id) {
     return res.status(400).json(errorResponse('Data tidak lengkap'));
   }
 
   try {
-    const matkul = await MataKuliah.create({ kode_mk, sks, prodi_id, semester_id });
+    const matkul = await MataKuliah.create({ kode_mk, nama_mk, sks, prodi_id, semester_id });
     return res.status(201).json(successResponse('Mata kuliah berhasil ditambahkan', matkul));
   } catch (error) {
     console.error('Error createMataKuliah:', error);
@@ -28,10 +29,14 @@ exports.createMataKuliah = async (req, res) => {
 
 exports.updateMataKuliah = async (req, res) => {
   const { id } = req.params;
-  const { kode_mk, sks, prodi_id, semester_id } = req.body;
+  const { kode_mk, nama_mk, sks, prodi_id, semester_id } = req.body;
+
+  if (!kode_mk || !nama_mk || !sks || !prodi_id || !semester_id) {
+    return res.status(400).json(errorResponse('Data tidak lengkap'));
+  }
 
   try {
-    const updated = await MataKuliah.update(id, { kode_mk, sks, prodi_id, semester_id });
+    const updated = await MataKuliah.update(id, { kode_mk, nama_mk, sks, prodi_id, semester_id });
     return res.status(200).json(successResponse('Mata kuliah berhasil diperbarui', updated));
   } catch (error) {
     console.error('Error updateMataKuliah:', error);
