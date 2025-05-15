@@ -14,13 +14,13 @@ exports.getJadwal = async (req, res) => {
 };
 
 exports.createJadwal = async (req, res) => {
-  const { kode_mk, nama_mk, ruangan_id, dosen_id, prodi_id, semester_id, hari, jam_mulai, jam_selesai } = req.body;
-  if (!kode_mk || !nama_mk || !ruangan_id || !dosen_id || !prodi_id || !semester_id || !hari || !jam_mulai || !jam_selesai) {
+  const { matkul_id, ruangan_id, dosen_id, prodi_id, semester_id, hari, jam_mulai, jam_selesai } = req.body;
+  if (!matkul_id || !ruangan_id || !dosen_id || !prodi_id || !semester_id || !hari || !jam_mulai || !jam_selesai) {
     return res.status(400).json(errorResponse('Data tidak lengkap'));
   }
 
   try {
-    const jadwal = await Jadwal.create({ kode_mk, nama_mk, ruangan_id, dosen_id, prodi_id, semester_id, hari, jam_mulai, jam_selesai });
+    const jadwal = await Jadwal.create({ matkul_id, ruangan_id, dosen_id, prodi_id, semester_id, hari, jam_mulai, jam_selesai });
     return res.status(201).json(successResponse('Jadwal kelas berhasil ditambahkan', jadwal));
   } catch (error) {
     console.error('Error createJadwal:', error);
@@ -30,10 +30,14 @@ exports.createJadwal = async (req, res) => {
 
 exports.updateJadwal = async (req, res) => {
   const { id } = req.params;
-  const { kode_mk, nama_mk, ruangan_id, dosen_id, prodi_id, semester_id, hari, jam_mulai, jam_selesai } = req.body;
+  const { matkul_id, ruangan_id, dosen_id, prodi_id, semester_id, hari, jam_mulai, jam_selesai } = req.body;
+
+  if (!matkul_id || !ruangan_id || !dosen_id || !prodi_id || !semester_id || !hari || !jam_mulai || !jam_selesai) {
+    return res.status(400).json(errorResponse('Data tidak lengkap'));
+  }
 
   try {
-    const updated = await Jadwal.update(id, { kode_mk, nama_mk, ruangan_id, dosen_id, prodi_id, semester_id, hari, jam_mulai, jam_selesai });
+    const updated = await Jadwal.update(id, { matkul_id, ruangan_id, dosen_id, prodi_id, semester_id, hari, jam_mulai, jam_selesai });
     return res.status(200).json(successResponse('Data jadwal berhasil diperbarui', updated));
   } catch (error) {
     console.error('Error updateJadwal:', error);
