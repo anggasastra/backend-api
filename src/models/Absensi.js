@@ -30,19 +30,20 @@ const Absensi = {
   },
 
   getLatest: async () => {
-    const [rows] = await db.query(`
-      SELECT 
-        a.id, a.mahasiswa_id, a.jadwal_id, a.check_in, a.check_out, a.status,
-        m.nim, m.nama AS nama,
-        j.nama_mk, j.ruangan_id, j.hari
-      FROM absensi a
-      JOIN mahasiswa m ON a.mahasiswa_id = m.id
-      JOIN jadwal_kelas j ON a.jadwal_id = j.id
-      WHERE DATE(a.check_in) = CURDATE()
-      ORDER BY a.check_in DESC
-    `);
-    return rows;
-  },
+  const [rows] = await db.query(`
+    SELECT 
+      a.id, a.mahasiswa_id, a.jadwal_id, a.check_in, a.check_out, a.status,
+      m.nim, m.nama AS nama,
+      mk.nama_mk, j.ruangan_id, j.hari
+    FROM absensi a
+    JOIN mahasiswa m ON a.mahasiswa_id = m.id
+    JOIN jadwal_kelas j ON a.jadwal_id = j.id
+    JOIN mata_kuliah mk ON j.matkul_id = mk.id
+    WHERE DATE(a.check_in) = CURDATE()
+    ORDER BY a.check_in DESC
+  `);
+  return rows;
+},
 
   getTotal: async () => {
     const [rows] = await db.query(`

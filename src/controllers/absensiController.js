@@ -43,7 +43,7 @@ exports.submitAbsensi = async (req, res) => {
       return res.status(403).json(errorResponse('Tidak ada jadwal aktif saat ini'));
     }
 
-    console.log('[JADWAL AKTIF] Mata Kuliah:', jadwalAktif.nama_mk);
+    console.log('[JADWAL AKTIF] Mata Kuliah:', jadwalAktif.matkul_id);
 
     const pendingRows = await Absensi.findPendingCheckout({
       mahasiswa_id: mahasiswa.id,
@@ -64,7 +64,7 @@ exports.submitAbsensi = async (req, res) => {
         status: 'checkout',
         waktu: timestamp,
         jenis: 'check-out',
-        mata_kuliah: jadwalAktif.nama_mk
+        mata_kuliah: jadwalAktif.matkul_id
       };
       broadcastAbsensiData(absensiData);
       return res.status(200).json(successResponse('Berhasil check-out', absensiData));
@@ -86,7 +86,7 @@ exports.submitAbsensi = async (req, res) => {
         status,
         waktu: timestamp,
         jenis: 'check-in',
-        mata_kuliah: jadwalAktif.nama_mk
+        mata_kuliah: jadwalAktif.matkul_id
       };
     broadcastAbsensiData(absensiData);
     return res.status(200).json(successResponse('Berhasil check-in', absensiData));
