@@ -98,6 +98,16 @@ exports.submitAbsensi = async (req, res) => {
   }
 };
 
+exports.getAllAbsensi = async (req, res) => {
+  try {
+    const data = await Absensi.getAll();
+    return res.status(200).json(successResponse('Data absensi berhasil diambil', data));
+  } catch (error) {
+    console.error('[ERROR] getAllAbsensi:', error);
+    return res.status(500).json(errorResponse('Gagal mengambil data absensi'));
+  }
+};
+
 exports.getAbsensi = async (req, res) => {
   try {
     const data = await Absensi.getLatest();
