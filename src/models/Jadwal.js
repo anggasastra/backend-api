@@ -2,7 +2,6 @@ const db = require('../../config/db');
 
 module.exports = {
   getAll: async ({ ruangan, hari } = {}) => {
-    // Query sudah JOIN ke mata_kuliah untuk ambil nama_mk dan kode_mk
     let sql = `
       SELECT 
         j.id, j.matkul_id, j.ruangan_id, j.dosen_id, j.prodi_id, j.semester_id, j.hari, j.jam_mulai, j.jam_selesai,
