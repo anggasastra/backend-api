@@ -33,8 +33,8 @@ exports.submitAbsensi = async (req, res) => {
 
     // 3. Temukan Jadwal Aktif
     const jadwalAktif = jadwalRows.find(j => {
-      const jamMulai = new Date(`${tanggalStr}T${j.jam_mulai}`);
-      const jamSelesai = new Date(`${tanggalStr}T${j.jam_selesai}`);
+      const jamMulai = new Date(j.jam_mulai);
+      const jamSelesai = new Date(j.jam_selesai);
       return waktuScan >= jamMulai && waktuScan <= jamSelesai;
     });
 
