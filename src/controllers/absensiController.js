@@ -3,7 +3,7 @@ const { successResponse, errorResponse } = require('../utils/responseHelper');
 const { broadcastAbsensiData } = require('../socket');
 
 function combineDate(dateStr, timeStr) {
-  return new Date(`${dateStr}T${timeStr}+08:00`);
+  return new Date(`${dateStr}T${timeStr}`);
 }
 
 // Fungsi bantu: tambah menit ke waktu HH:mm:ss, hasil tetap HH:mm:ss
@@ -85,7 +85,7 @@ exports.submitAbsensi = async (req, res) => {
       mahasiswa_id,
       jadwal_id,
       check_in: timestamp,                            // sudah termasuk offset +08:00
-      check_out: `${tanggalStr}T${jam_selesai}+08:00`, // tambahkan offset +08:00 di check_out
+      check_out: `${tanggalStr}T${jam_selesai}`, // tambahkan offset +08:00 di check_out
       status,
       modified_by: null
     });
