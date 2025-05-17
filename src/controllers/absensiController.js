@@ -87,7 +87,7 @@ exports.submitAbsensi = async (req, res) => {
     };
 
     broadcastAbsensiData(absensiData);
-    return res.status(200).json(successResponse('Berhasil check-in', absensiData));
+    return res.status(200).json(successResponse('Absen Berhasil', absensiData));
 
   } catch (error) {
     console.error('[ERROR] submitAbsensi:', error);
