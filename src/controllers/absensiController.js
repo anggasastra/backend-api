@@ -2,11 +2,13 @@ const { Mahasiswa, Jadwal, Absensi } = require('../models');
 const { successResponse, errorResponse } = require('../utils/responseHelper');
 const { broadcastAbsensiData } = require('../socket');
 
-// Fungsi bantu
-function combineDateTime(dateStr, timeStr) {
-  return new Date(`${dateStr}T${timeStr}`);
+// Fungsi bantu: gabungkan tanggal + waktu + offset +08:00 jadi Date object
+function combineDateTimeWithOffset(dateStr, timeStr, offset = '+08:00') {
+  // Contoh input: dateStr='2025-05-18', timeStr='01:20:00', offset='+08:00'
+  return new Date(`${dateStr}T${timeStr}${offset}`);
 }
 
+// Fungsi bantu: tambah menit ke waktu HH:mm:ss, hasil tetap HH:mm:ss
 function addMenitToTime(timeStr, menit) {
   const [h, m, s] = timeStr.split(':').map(Number);
   const date = new Date(1970, 0, 1, h, m + menit, s || 0);
@@ -24,7 +26,7 @@ exports.submitAbsensi = async (req, res) => {
   }
 
   try {
-    // 1. Ambil data mahasiswa
+    // 1. Ambil data mahasiswa berdasarkan uid
     const mhsResult = await Mahasiswa.findByUID(uid);
     if (mhsResult.length === 0) {
       return res.status(404).json(errorResponse('Kamu Bukan Mahasiswa'));
@@ -32,9 +34,10 @@ exports.submitAbsensi = async (req, res) => {
     const mahasiswa = mhsResult[0];
     const { id: mahasiswa_id, nama, prodi_id, semester_id } = mahasiswa;
 
-    // 2. Parsing waktu (tidak diubah karena sudah ISO +08:00)
+    // 2. Parsing waktu scan dari device (diasumsikan sudah include offset +08:00)
     const waktuScan = new Date(timestamp);
     const tanggalStr = timestamp.split('T')[0];
+    // Ambil hari dalam bahasa Indonesia (misal "Senin")
     const hari = waktuScan.toLocaleString('id-ID', { weekday: 'long' }).replace(/^\w/, c => c.toUpperCase());
 
     // 3. Ambil jadwal sesuai ruangan, hari, prodi, semester
@@ -43,10 +46,10 @@ exports.submitAbsensi = async (req, res) => {
       return res.status(403).json(errorResponse('Tidak ada jadwal'));
     }
 
-    // 4. Cari jadwal aktif berdasar jam
+    // 4. Cari jadwal aktif berdasar jam, dengan waktu jadwal pakai offset +08:00
     const jadwalAktif = jadwalRows.find(j => {
-      const jamMulai = combineDateTime(tanggalStr, j.jam_mulai);
-      const jamSelesai = combineDateTime(tanggalStr, j.jam_selesai);
+      const jamMulai = combineDateTimeWithOffset(tanggalStr, j.jam_mulai);
+      const jamSelesai = combineDateTimeWithOffset(tanggalStr, j.jam_selesai);
       return waktuScan >= jamMulai && waktuScan <= jamSelesai;
     });
 
@@ -56,7 +59,7 @@ exports.submitAbsensi = async (req, res) => {
 
     const { id: jadwal_id, matkul_id, jam_mulai, jam_selesai } = jadwalAktif;
 
-    // 5. Cek apakah sudah absen hari ini
+    // 5. Cek apakah sudah absen hari ini (tanggal lokal berdasarkan waktuScan)
     const absensiHariIni = await Absensi.findByMahasiswaJadwalDate({
       mahasiswa_id,
       jadwal_id,
@@ -68,8 +71,8 @@ exports.submitAbsensi = async (req, res) => {
     }
 
     // 6. Tentukan status (ontime / late)
-    const jamMulaiDate = combineDateTime(tanggalStr, jam_mulai);
-    const batasOntimeDate = combineDateTime(tanggalStr, addMenitToTime(jam_mulai, 15));
+    const jamMulaiDate = combineDateTimeWithOffset(tanggalStr, jam_mulai);
+    const batasOntimeDate = combineDateTimeWithOffset(tanggalStr, addMenitToTime(jam_mulai, 15));
 
     if (waktuScan < jamMulaiDate) {
       return res.status(403).json(errorResponse('Absensi terlalu awal'));
@@ -77,12 +80,12 @@ exports.submitAbsensi = async (req, res) => {
 
     const status = waktuScan <= batasOntimeDate ? 'ontime' : 'late';
 
-    // 7. Simpan ke database
+    // 7. Simpan ke database dengan waktu check_in & check_out lengkap dengan offset +08:00
     const absensi = await Absensi.create({
       mahasiswa_id,
       jadwal_id,
-      check_in: timestamp,
-      check_out: `${tanggalStr}T${jam_selesai}`,
+      check_in: timestamp,                            // sudah termasuk offset +08:00
+      check_out: `${tanggalStr}T${jam_selesai}+08:00`, // tambahkan offset +08:00 di check_out
       status,
       modified_by: null
     });
