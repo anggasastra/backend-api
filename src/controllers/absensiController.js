@@ -2,6 +2,17 @@ const { Mahasiswa, Jadwal, Absensi } = require('../models');
 const { successResponse, errorResponse } = require('../utils/responseHelper');
 const { broadcastAbsensiData } = require('../socket');
 
+// Fungsi bantu untuk parsing dan manipulasi jam bertipe TIME
+function combineDateTime(dateStr, timeStr) {
+  return new Date(`${dateStr}T${timeStr}`);
+}
+
+function addMenitToTime(timeStr, menit) {
+  const [h, m, s] = timeStr.split(':').map(Number);
+  const date = new Date(1970, 0, 1, h, m + menit, s || 0);
+  return date.toTimeString().split(' ')[0]; // Format: HH:mm:ss
+}
+
 exports.submitAbsensi = async (req, res) => {
   const { uid, deviceId, timestamp } = req.body;
 
@@ -21,30 +32,31 @@ exports.submitAbsensi = async (req, res) => {
     const mahasiswa = mhsResult[0];
     const { id: mahasiswa_id, nama, prodi_id, semester_id } = mahasiswa;
 
+    // 2. Persiapan waktu
     const waktuScan = new Date(timestamp);
     const tanggalStr = timestamp.split('T')[0];
     const hari = waktuScan.toLocaleString('id-ID', { weekday: 'long' }).toLowerCase();
 
-    // 2. Ambil Jadwal Sesuai Parameter
+    // 3. Ambil Jadwal Sesuai Parameter
     const jadwalRows = await Jadwal.getAll({ ruangan: deviceId, hari, prodi_id, semester_id });
     if (jadwalRows.length === 0) {
       return res.status(403).json(errorResponse('Tidak ada jadwal'));
     }
 
-    // 3. Temukan Jadwal Aktif
+    // 4. Temukan Jadwal Aktif Berdasarkan waktu scan
     const jadwalAktif = jadwalRows.find(j => {
-      const jamMulai = new Date(j.jam_mulai);
-      const jamSelesai = new Date(j.jam_selesai);
-      return waktuScan >= jamMulai && waktuScan <= jamSelesai;
+      const jamMulaiDate = combineDateTime(tanggalStr, j.jam_mulai);
+      const jamSelesaiDate = combineDateTime(tanggalStr, j.jam_selesai);
+      return waktuScan >= jamMulaiDate && waktuScan <= jamSelesaiDate;
     });
 
     if (!jadwalAktif) {
-      return res.status(403).json(errorResponse('Tidak ada jadwal aktif'));
+      return res.status(403).json(errorResponse('Tidak ada jadwal aktif saat ini'));
     }
 
     const { id: jadwal_id, matkul_id, jam_mulai, jam_selesai } = jadwalAktif;
 
-    // 4. Cek Apakah Sudah Absen Hari Ini
+    // 5. Cek apakah sudah absen hari ini
     const absensiHariIni = await Absensi.findByMahasiswaJadwalDate({
       mahasiswa_id,
       jadwal_id,
@@ -55,20 +67,20 @@ exports.submitAbsensi = async (req, res) => {
       return res.status(200).json(successResponse('Kamu sudah absen hari ini'));
     }
 
-    // 5. Hitung Status (ontime / late)
-    const jamMulaiDate = new Date(jam_mulai);
-    const batasOntime = new Date(jamMulaiDate.getTime() + 15 * 60 * 1000);
+    // 6. Hitung status ontime atau late
+    const jamMulaiDate = combineDateTime(tanggalStr, jam_mulai);
+    const batasOntimeDate = combineDateTime(tanggalStr, addMenitToTime(jam_mulai, 15));
 
     let status;
     if (waktuScan < jamMulaiDate) {
       return res.status(403).json(errorResponse('Absensi terlalu awal'));
-    } else if (waktuScan <= batasOntime) {
+    } else if (waktuScan <= batasOntimeDate) {
       status = 'ontime';
     } else {
       status = 'late';
     }
 
-    // 6. Buat Absensi (Check-in, Auto Checkout)
+    // 7. Simpan Absensi
     const absensi = await Absensi.create({
       mahasiswa_id,
       jadwal_id,
@@ -94,7 +106,6 @@ exports.submitAbsensi = async (req, res) => {
     return res.status(500).json(errorResponse('Server error'));
   }
 };
-
 
 exports.getAllAbsensi = async (req, res) => {
   try {
