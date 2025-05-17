@@ -2,10 +2,8 @@ const { Mahasiswa, Jadwal, Absensi } = require('../models');
 const { successResponse, errorResponse } = require('../utils/responseHelper');
 const { broadcastAbsensiData } = require('../socket');
 
-// Fungsi bantu: gabungkan tanggal + waktu + offset +08:00 jadi Date object
-function combineDateTimeWithOffset(dateStr, timeStr, offset = '+08:00') {
-  // Contoh input: dateStr='2025-05-18', timeStr='01:20:00', offset='+08:00'
-  return new Date(`${dateStr}T${timeStr}${offset}`);
+function combineDate(dateStr, timeStr) {
+  return new Date(`${dateStr}T${timeStr}+08:00`);
 }
 
 // Fungsi bantu: tambah menit ke waktu HH:mm:ss, hasil tetap HH:mm:ss
@@ -46,10 +44,12 @@ exports.submitAbsensi = async (req, res) => {
       return res.status(403).json(errorResponse('Tidak ada jadwal'));
     }
 
+    console.log("Waktu Scan:", waktuScan.toISOString());
+    console.log("Jadwal:");
     // 4. Cari jadwal aktif berdasar jam, dengan waktu jadwal pakai offset +08:00
     const jadwalAktif = jadwalRows.find(j => {
-      const jamMulai = combineDateTimeWithOffset(tanggalStr, j.jam_mulai);
-      const jamSelesai = combineDateTimeWithOffset(tanggalStr, j.jam_selesai);
+      const jamMulai = combineDate(tanggalStr, j.jam_mulai);
+      const jamSelesai = combineDate(tanggalStr, j.jam_selesai);
       return waktuScan >= jamMulai && waktuScan <= jamSelesai;
     });
 
@@ -71,8 +71,8 @@ exports.submitAbsensi = async (req, res) => {
     }
 
     // 6. Tentukan status (ontime / late)
-    const jamMulaiDate = combineDateTimeWithOffset(tanggalStr, jam_mulai);
-    const batasOntimeDate = combineDateTimeWithOffset(tanggalStr, addMenitToTime(jam_mulai, 15));
+    const jamMulaiDate = combineDate(tanggalStr, jam_mulai);
+    const batasOntimeDate = combineDate(tanggalStr, addMenitToTime(jam_mulai, 15));
 
     if (waktuScan < jamMulaiDate) {
       return res.status(403).json(errorResponse('Absensi terlalu awal'));
