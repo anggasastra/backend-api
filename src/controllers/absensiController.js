@@ -56,7 +56,7 @@ exports.submitAbsensi = async (req, res) => {
     }
 
     // 5. Hitung Status (ontime / late)
-    const jamMulaiDate = new Date(`${tanggalStr}T${jam_mulai}`);
+    const jamMulaiDate = new Date(jam_mulai);
     const batasOntime = new Date(jamMulaiDate.getTime() + 15 * 60 * 1000);
 
     let status;
