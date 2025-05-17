@@ -37,6 +37,15 @@ const Absensi = {
     return rows;
   },
 
+  findByMahasiswaJadwalDate: async ({ mahasiswa_id, jadwal_id, date }) => {
+  const [rows] = await db.query(
+    `SELECT * FROM absensi 
+     WHERE mahasiswa_id = ? AND jadwal_id = ? AND DATE(check_in) = ?`,
+    [mahasiswa_id, jadwal_id, date]
+  );
+  return rows;
+},
+
   updateCheckout: async ({ id, check_out, modified_by }) => {
     await db.query(
       `UPDATE absensi SET check_out = ?, modified_by = ? WHERE id = ?`,

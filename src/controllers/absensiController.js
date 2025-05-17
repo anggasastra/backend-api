@@ -45,7 +45,7 @@ exports.submitAbsensi = async (req, res) => {
     const { id: jadwal_id, matkul_id, jam_mulai, jam_selesai } = jadwalAktif;
 
     // 4. Cek Apakah Sudah Absen Hari Ini
-    const absensiHariIni = await Absensi.find({
+    const absensiHariIni = await Absensi.findByMahasiswaJadwalDate({
       mahasiswa_id,
       jadwal_id,
       date: tanggalStr
