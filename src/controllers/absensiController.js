@@ -2,7 +2,7 @@ const { Mahasiswa, Jadwal, Absensi } = require('../models');
 const { successResponse, errorResponse } = require('../utils/responseHelper');
 const { broadcastAbsensiData } = require('../socket');
 
-// Fungsi bantu untuk parsing dan manipulasi jam bertipe TIME
+// Fungsi bantu
 function combineDateTime(dateStr, timeStr) {
   return new Date(`${dateStr}T${timeStr}`);
 }
@@ -24,7 +24,7 @@ exports.submitAbsensi = async (req, res) => {
   }
 
   try {
-    // 1. Ambil Mahasiswa
+    // 1. Ambil data mahasiswa
     const mhsResult = await Mahasiswa.findByUID(uid);
     if (mhsResult.length === 0) {
       return res.status(404).json(errorResponse('Kamu Bukan Mahasiswa'));
@@ -32,23 +32,22 @@ exports.submitAbsensi = async (req, res) => {
     const mahasiswa = mhsResult[0];
     const { id: mahasiswa_id, nama, prodi_id, semester_id } = mahasiswa;
 
-    // 2. Persiapan waktu
+    // 2. Parsing waktu (tidak diubah karena sudah ISO +08:00)
     const waktuScan = new Date(timestamp);
     const tanggalStr = timestamp.split('T')[0];
     const hari = waktuScan.toLocaleString('id-ID', { weekday: 'long' }).replace(/^\w/, c => c.toUpperCase());
-    console.log("[DEBUG] Hari lowercase:", hari);
 
-    // 3. Ambil Jadwal Sesuai Parameter
+    // 3. Ambil jadwal sesuai ruangan, hari, prodi, semester
     const jadwalRows = await Jadwal.getAll({ ruangan: deviceId, hari, prodi_id, semester_id });
     if (jadwalRows.length === 0) {
       return res.status(403).json(errorResponse('Tidak ada jadwal'));
     }
 
-    // 4. Temukan Jadwal Aktif Berdasarkan waktu scan
+    // 4. Cari jadwal aktif berdasar jam
     const jadwalAktif = jadwalRows.find(j => {
-      const jamMulaiDate = combineDateTime(tanggalStr, j.jam_mulai);
-      const jamSelesaiDate = combineDateTime(tanggalStr, j.jam_selesai);
-      return waktuScan >= jamMulaiDate && waktuScan <= jamSelesaiDate;
+      const jamMulai = combineDateTime(tanggalStr, j.jam_mulai);
+      const jamSelesai = combineDateTime(tanggalStr, j.jam_selesai);
+      return waktuScan >= jamMulai && waktuScan <= jamSelesai;
     });
 
     if (!jadwalAktif) {
@@ -68,20 +67,17 @@ exports.submitAbsensi = async (req, res) => {
       return res.status(200).json(successResponse('Kamu sudah absen hari ini'));
     }
 
-    // 6. Hitung status ontime atau late
+    // 6. Tentukan status (ontime / late)
     const jamMulaiDate = combineDateTime(tanggalStr, jam_mulai);
     const batasOntimeDate = combineDateTime(tanggalStr, addMenitToTime(jam_mulai, 15));
 
-    let status;
     if (waktuScan < jamMulaiDate) {
       return res.status(403).json(errorResponse('Absensi terlalu awal'));
-    } else if (waktuScan <= batasOntimeDate) {
-      status = 'ontime';
-    } else {
-      status = 'late';
     }
 
-    // 7. Simpan Absensi
+    const status = waktuScan <= batasOntimeDate ? 'ontime' : 'late';
+
+    // 7. Simpan ke database
     const absensi = await Absensi.create({
       mahasiswa_id,
       jadwal_id,
@@ -105,35 +101,5 @@ exports.submitAbsensi = async (req, res) => {
   } catch (error) {
     console.error('[ERROR] submitAbsensi:', error);
     return res.status(500).json(errorResponse('Server error'));
-  }
-};
-
-exports.getAllAbsensi = async (req, res) => {
-  try {
-    const data = await Absensi.getAll();
-    return res.status(200).json(successResponse('Data absensi berhasil diambil', data));
-  } catch (error) {
-    console.error('[ERROR] getAllAbsensi:', error);
-    return res.status(500).json(errorResponse('Gagal mengambil data absensi'));
-  }
-};
-
-exports.getAbsensi = async (req, res) => {
-  try {
-    const data = await Absensi.getLatest();
-    return res.status(200).json(successResponse('Data absensi terbaru berhasil diambil', data));
-  } catch (error) {
-    console.error('[ERROR] getAbsensiTerbaru:', error);
-    return res.status(500).json(errorResponse('Gagal mengambil data absensi terbaru'));
-  }
-};
-
-exports.getTotalAbsen = async (req, res) => {
-  try {
-    const total = await Absensi.getTotal();
-    return res.status(200).json(successResponse('Total absensi hari ini berhasil diambil', total));
-  } catch (error) {
-    console.error('[ERROR] getTotalAbsen:', error);
-    return res.status(500).json(errorResponse('Gagal mengambil total absensi hari ini'));
   }
 };
