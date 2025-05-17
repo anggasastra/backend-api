@@ -35,7 +35,7 @@ exports.submitAbsensi = async (req, res) => {
     // 2. Persiapan waktu
     const waktuScan = new Date(timestamp);
     const tanggalStr = timestamp.split('T')[0];
-    const hari = waktuScan.toLocaleString('id-ID', { weekday: 'long' }).toLowerCase();
+    const hari = waktuScan.toLocaleString('id-ID', { weekday: 'long' }).replace(/^\w/, c => c.toUpperCase());
     console.log("[DEBUG] Hari lowercase:", hari);
 
     // 3. Ambil Jadwal Sesuai Parameter
