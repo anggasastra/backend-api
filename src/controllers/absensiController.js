@@ -36,6 +36,7 @@ exports.submitAbsensi = async (req, res) => {
     const waktuScan = new Date(timestamp);
     const tanggalStr = timestamp.split('T')[0];
     const hari = waktuScan.toLocaleString('id-ID', { weekday: 'long' }).toLowerCase();
+    console.log("[DEBUG] Hari lowercase:", hari);
 
     // 3. Ambil Jadwal Sesuai Parameter
     const jadwalRows = await Jadwal.getAll({ ruangan: deviceId, hari, prodi_id, semester_id });
