@@ -103,3 +103,33 @@ exports.submitAbsensi = async (req, res) => {
     return res.status(500).json(errorResponse('Server error'));
   }
 };
+
+exports.getAllAbsensi = async (req, res) => {
+  try {
+    const data = await Absensi.getAll();
+    return res.status(200).json(successResponse('Data absensi berhasil diambil', data));
+  } catch (error) {
+    console.error('[ERROR] getAllAbsensi:', error);
+    return res.status(500).json(errorResponse('Gagal mengambil data absensi'));
+  }
+};
+
+exports.getAbsensi = async (req, res) => {
+  try {
+    const data = await Absensi.getLatest();
+    return res.status(200).json(successResponse('Data absensi terbaru berhasil diambil', data));
+  } catch (error) {
+    console.error('[ERROR] getAbsensiTerbaru:', error);
+    return res.status(500).json(errorResponse('Gagal mengambil data absensi terbaru'));
+  }
+};
+
+exports.getTotalAbsen = async (req, res) => {
+  try {
+    const total = await Absensi.getTotal();
+    return res.status(200).json(successResponse('Total absensi hari ini berhasil diambil', total));
+  } catch (error) {
+    console.error('[ERROR] getTotalAbsen:', error);
+    return res.status(500).json(errorResponse('Gagal mengambil total absensi hari ini'));
+  }
+};
