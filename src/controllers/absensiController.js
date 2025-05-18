@@ -108,6 +108,17 @@ exports.getAbsensi = async (req, res) => {
   }
 };
 
+exports.getAllAbsensi = async (req, res) => {
+  try {
+    const data = await Absensi.getAll(); // pastikan Absensi.getAll() ada di model
+    return res.status(200).json(successResponse('Berhasil mengambil semua data absensi', data));
+  } catch (error) {
+    console.error('[ERROR] getAllAbsensi:', error);
+    return res.status(500).json(errorResponse('Gagal mengambil data absensi'));
+  }
+};
+
+
 exports.getTotalAbsen = async (req, res) => {
   try {
     const total = await Absensi.getTotal();
