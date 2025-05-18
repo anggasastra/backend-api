@@ -2,6 +2,12 @@ const { Mahasiswa, Jadwal, Absensi } = require('../models');
 const { successResponse, errorResponse } = require('../utils/responseHelper');
 const { broadcastAbsensiData } = require('../socket');
 
+function addMenitToTime(timeStr, menit) {
+  const [h, m, s] = timeStr.split(':').map(Number);
+  const date = new Date(1970, 0, 1, h, m + menit, s || 0);
+  return date.toTimeString().split(' ')[0]; // Format: HH:mm:ss
+}
+
 exports.submitAbsensi = async (req, res) => {
   const { uid, deviceId, timestamp } = req.body;
 
@@ -9,28 +15,31 @@ exports.submitAbsensi = async (req, res) => {
   console.log('[RFID SCAN] Data Masuk:', { uid, deviceId, timestamp });
 
   if (!uid || !deviceId || !timestamp) {
-    console.log('[ERROR] Data tidak lengkap');
     return res.status(400).json(errorResponse('Data tidak lengkap'));
   }
 
   try {
+    // 1. Ambil Mahasiswa
     const mhsResult = await Mahasiswa.findByUID(uid);
     if (mhsResult.length === 0) {
-      console.log('[NOT FOUND] Mahasiswa tidak ditemukan:', uid);
-      return res.status(404).json(errorResponse('Mahasiswa tidak ditemukan'));
+      return res.status(404).json(errorResponse('Kamu Bukan Mahasiswa'));
     }
     const mahasiswa = mhsResult[0];
-    console.log('[MAHASISWA] Ditemukan:', mahasiswa.nama);
+    const { id: mahasiswa_id, nama, prodi_id, semester_id } = mahasiswa;
 
+    // 2. Persiapan waktu
     const waktuScan = new Date(timestamp);
     const tanggalStr = timestamp.split('T')[0];
-
     const hari = waktuScan.toLocaleString('id-ID', { weekday: 'long' }).replace(/^\w/, c => c.toUpperCase());
-    console.log('[WAKTU] Scan:', waktuScan.toLocaleString(), '| Hari:', hari);
+    console.log("[DEBUG] Hari lowercase:", hari);
 
-    const jadwalRows = await Jadwal.getAll({ ruangan: deviceId, hari });
-    console.log('[JADWAL] Ditemukan:', jadwalRows.length);
+    // 3. Ambil Jadwal Sesuai Parameter
+    const jadwalRows = await Jadwal.getAll({ ruangan: deviceId, hari, prodi_id, semester_id });
+    if (jadwalRows.length === 0) {
+      return res.status(403).json(errorResponse('Tidak ada jadwal'));
+    }
 
+    // 4. Temukan Jadwal Aktif Berdasarkan waktu scan
     const jadwalAktif = jadwalRows.find(j => {
       const jamMulai = new Date(`${tanggalStr}T${j.jam_mulai}`);
       const jamSelesai = new Date(`${tanggalStr}T${j.jam_selesai}`);
@@ -38,62 +47,69 @@ exports.submitAbsensi = async (req, res) => {
     });
 
     if (!jadwalAktif) {
-      console.log('[JADWAL] Tidak ada jadwal aktif di waktu ini');
       return res.status(403).json(errorResponse('Tidak ada jadwal aktif saat ini'));
     }
 
-    console.log('[JADWAL AKTIF] Mata Kuliah:', jadwalAktif.nama_mk);
+    const { id: jadwal_id, matkul_id, jam_mulai, jam_selesai } = jadwalAktif;
 
-    const pendingRows = await Absensi.findPendingCheckout({
-      mahasiswa_id: mahasiswa.id,
-      jadwal_id: jadwalAktif.id,
+    // 5. Cek apakah sudah absen hari ini
+    const absensiHariIni = await Absensi.findByMahasiswaJadwalDate({
+      mahasiswa_id,
+      jadwal_id,
       date: tanggalStr
     });
 
-    if (pendingRows.length > 0) {
-      console.log('[CHECK-OUT] Absensi ID:', pendingRows[0].id);
-      await Absensi.updateCheckout({
-        id: pendingRows[0].id,
-        check_out: new Date(timestamp),
-        modified_by: null // sistem, tidak diedit oleh user
-      });
-      console.log('[CHECK-OUT] Berhasil untuk:', mahasiswa.nama);
-      const absensiData = {
-        nama: mahasiswa.nama,
-        status: 'checkout',
-        waktu: new Date(timestamp),
-        jenis: 'check-out',
-        mata_kuliah: jadwalAktif.nama_mk
-      };
-      broadcastAbsensiData(absensiData);
-      return res.status(200).json(successResponse('Berhasil check-out', absensiData));
-    } else {
-      const jamMulai = new Date(`${tanggalStr}T${jadwalAktif.jam_mulai}`);
-      const status = (waktuScan <= new Date(jamMulai.getTime() + 15 * 60 * 1000)) ? 'ontime' : 'late';
-
-      const absensi = await Absensi.create({
-        mahasiswa_id: mahasiswa.id,
-        jadwal_id: jadwalAktif.id,
-        check_in: timestamp,
-        status,
-        modified_by: null
-      });
-
-      console.log('[CHECK-IN] Status:', status, '| ID:', absensi.id);
-      const absensiData = {
-        nama: mahasiswa.nama,
-        status,
-        waktu: timestamp,
-        jenis: 'check-in',
-        mata_kuliah: jadwalAktif.nama_mk
-      };
-    broadcastAbsensiData(absensiData);
-    return res.status(200).json(successResponse('Berhasil check-in', absensiData));
+    if (absensiHariIni.length > 0) {
+      return res.status(200).json(successResponse('Kamu sudah absen hari ini'));
     }
+
+    // 6. Hitung status ontime atau late
+    const jamMulaiDate = combineDateTime(tanggalStr, jam_mulai);
+    const batasOntimeDate = combineDateTime(tanggalStr, addMenitToTime(jam_mulai, 15));
+
+    let status;
+    if (waktuScan < jamMulaiDate) {
+      return res.status(403).json(errorResponse('Absensi terlalu awal'));
+    } else if (waktuScan <= batasOntimeDate) {
+      status = 'ontime';
+    } else {
+      status = 'late';
+    }
+
+    // 7. Simpan Absensi
+    const absensi = await Absensi.create({
+      mahasiswa_id,
+      jadwal_id,
+      check_in: timestamp,
+      check_out: `${tanggalStr}T${jam_selesai}`,
+      status,
+      modified_by: null
+    });
+
+    const absensiData = {
+      nama,
+      status,
+      waktu: timestamp,
+      jenis: 'check-in',
+      mata_kuliah: matkul_id
+    };
+
+    broadcastAbsensiData(absensiData);
+    return res.status(200).json(successResponse('Absen Berhasil', absensiData));
 
   } catch (error) {
     console.error('[ERROR] submitAbsensi:', error);
     return res.status(500).json(errorResponse('Server error'));
+  }
+};
+
+exports.getAllAbsensi = async (req, res) => {
+  try {
+    const data = await Absensi.getAll();
+    return res.status(200).json(successResponse('Data absensi berhasil diambil', data));
+  } catch (error) {
+    console.error('[ERROR] getAllAbsensi:', error);
+    return res.status(500).json(errorResponse('Gagal mengambil data absensi'));
   }
 };
 
@@ -106,17 +122,6 @@ exports.getAbsensi = async (req, res) => {
     return res.status(500).json(errorResponse('Gagal mengambil data absensi terbaru'));
   }
 };
-
-exports.getAllAbsensi = async (req, res) => {
-  try {
-    const data = await Absensi.getAll(); // pastikan Absensi.getAll() ada di model
-    return res.status(200).json(successResponse('Berhasil mengambil semua data absensi', data));
-  } catch (error) {
-    console.error('[ERROR] getAllAbsensi:', error);
-    return res.status(500).json(errorResponse('Gagal mengambil data absensi'));
-  }
-};
-
 
 exports.getTotalAbsen = async (req, res) => {
   try {
