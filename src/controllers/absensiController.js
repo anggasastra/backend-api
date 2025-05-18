@@ -37,10 +37,9 @@ exports.submitAbsensi = async (req, res) => {
     const mahasiswa = mhsResult[0];
     const { id: mahasiswa_id, nama, prodi_id, semester_id } = mahasiswa;
 
-    // Parsing waktu dari timestamp + waktu Jakarta
     const waktuScan = dayjs(timestamp).tz('Asia/Makassar');
     const tanggalStr = waktuScan.format('YYYY-MM-DD');
-    const hari = waktuScan.format('dddd'); // e.g., 'Senin'
+    const hari = waktuScan.format('dddd');
 
     const jadwalRows = await Jadwal.getAll({ ruangan: deviceId, hari, prodi_id, semester_id });
     if (jadwalRows.length === 0) {
@@ -48,11 +47,10 @@ exports.submitAbsensi = async (req, res) => {
     }
 
     console.log("Waktu Scan:", waktuScan.format());
-    console.log("Jadwal:");
 
     const jadwalAktif = jadwalRows.find(j => {
-      const jamMulai = dayjs(`${tanggalStr}T${j.jam_mulai}`).tz('Asia/Jakarta');
-      const jamSelesai = dayjs(`${tanggalStr}T${j.jam_selesai}`).tz('Asia/Jakarta');
+      const jamMulai = dayjs(`${tanggalStr}T${j.jam_mulai}`).tz('Asia/Makassar');
+      const jamSelesai = dayjs(`${tanggalStr}T${j.jam_selesai}`).tz('Asia/Makassar');
       return waktuScan.isAfter(jamMulai.subtract(1, 'minute')) && waktuScan.isBefore(jamSelesai.add(1, 'minute'));
     });
 
@@ -73,7 +71,7 @@ exports.submitAbsensi = async (req, res) => {
     }
 
     // Penentuan status
-    const jamMulaiDate = dayjs(`${tanggalStr}T${jam_mulai}`).tz('Asia/Jakarta');
+    const jamMulaiDate = dayjs(`${tanggalStr}T${jam_mulai}`).tz('Asia/Makassar');
     const batasOntime = jamMulaiDate.add(15, 'minute');
 
     if (waktuScan.isBefore(jamMulaiDate)) {
@@ -82,8 +80,8 @@ exports.submitAbsensi = async (req, res) => {
 
     const status = waktuScan.isSameOrBefore(batasOntime) ? 'ontime' : 'late';
 
-    const checkInTime = waktuScan.format(); // ISO format waktu lokal
-    const checkOutTime = dayjs(`${tanggalStr}T${jam_selesai}`).tz('Asia/Jakarta').format();
+    const checkInTime = waktuScan.format();
+    const checkOutTime = dayjs(`${tanggalStr}T${jam_selesai}`).tz('Asia/Makassar').format();
 
     const absensi = await Absensi.create({
       mahasiswa_id,
