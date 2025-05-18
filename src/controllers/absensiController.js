@@ -2,7 +2,6 @@ const { Mahasiswa, Jadwal, Absensi } = require('../models');
 const { successResponse, errorResponse } = require('../utils/responseHelper');
 const { broadcastAbsensiData } = require('../socket');
 
-// Tambahkan import untuk dayjs dan plugin timezone
 const dayjs = require('dayjs');
 const utc = require('dayjs/plugin/utc');
 const timezone = require('dayjs/plugin/timezone');
@@ -11,9 +10,9 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.locale('id');
 
+// ===== [POST] SUBMIT ABSENSI =====
 exports.submitAbsensi = async (req, res) => {
   const { uid, deviceId, timestamp } = req.body;
-
   console.log('====================');
   console.log('[RFID SCAN] Data Masuk:', { uid, deviceId, timestamp });
 
@@ -22,32 +21,32 @@ exports.submitAbsensi = async (req, res) => {
   }
 
   try {
-    // 1. Ambil Mahasiswa
-    const mhsResult = await Mahasiswa.findByUID(uid);
-    if (mhsResult.length === 0) {
+    // --- [1] Cek Mahasiswa ---
+    const mhs = await Mahasiswa.findByUID(uid);
+    if (mhs.length === 0) {
       return res.status(404).json(errorResponse('Kamu Bukan Mahasiswa'));
     }
-    const mahasiswa = mhsResult[0];
+
+    const mahasiswa = mhs[0];
     const { id: mahasiswa_id, nama, prodi_id, semester_id } = mahasiswa;
 
-    // 2. Persiapan waktu dengan dayjs
-    const waktuScan = dayjs(timestamp).tz('Asia/Makassar');
+    // --- [2] Konversi waktu UTC ke GMT+8 (lokal) ---
+    const waktuScan = dayjs.utc(timestamp).tz('Asia/Makassar');
     const tanggalStr = waktuScan.format('YYYY-MM-DD');
     const hari = waktuScan.format('dddd');
     console.log('[DEBUG] waktuScan:', waktuScan.format());
     console.log('[DEBUG] Hari:', hari);
 
-    // 3. Ambil Jadwal Sesuai Parameter
-    const jadwalRows = await Jadwal.getAll({ ruangan: deviceId, hari, prodi_id, semester_id });
-    if (jadwalRows.length === 0) {
+    // --- [3] Ambil dan filter Jadwal ---
+    const jadwalList = await Jadwal.getAll({ ruangan: deviceId, hari, prodi_id, semester_id });
+    if (jadwalList.length === 0) {
       return res.status(403).json(errorResponse('Tidak ada jadwal'));
     }
 
-    // 4. Temukan Jadwal Aktif Berdasarkan waktu scan
-    const jadwalAktif = jadwalRows.find(j => {
-      const jamMulai = dayjs(`${tanggalStr}T${j.jam_mulai}`).tz('Asia/Makassar');
-      const jamSelesai = dayjs(`${tanggalStr}T${j.jam_selesai}`).tz('Asia/Makassar');
-      return waktuScan.isAfter(jamMulai) && waktuScan.isBefore(jamSelesai);
+    const jadwalAktif = jadwalList.find(j => {
+      const mulai = dayjs(`${tanggalStr}T${j.jam_mulai}`).tz('Asia/Makassar');
+      const selesai = dayjs(`${tanggalStr}T${j.jam_selesai}`).tz('Asia/Makassar');
+      return waktuScan.isAfter(mulai) && waktuScan.isBefore(selesai);
     });
 
     if (!jadwalAktif) {
@@ -55,42 +54,36 @@ exports.submitAbsensi = async (req, res) => {
     }
 
     const { id: jadwal_id, matkul_id, jam_mulai, jam_selesai } = jadwalAktif;
+    const jamMulai = dayjs(`${tanggalStr}T${jam_mulai}`).tz('Asia/Makassar');
+    const jamSelesai = dayjs(`${tanggalStr}T${jam_selesai}`).tz('Asia/Makassar');
 
-    // 5. Cek apakah sudah absen hari ini
-    const absensiHariIni = await Absensi.findByMahasiswaJadwalDate({
-      mahasiswa_id,
-      jadwal_id,
-      date: tanggalStr
-    });
-
-    if (absensiHariIni.length > 0) {
+    // --- [4] Cek apakah sudah absen ---
+    const sudahAbsen = await Absensi.findByMahasiswaJadwalDate({ mahasiswa_id, jadwal_id, date: tanggalStr });
+    if (sudahAbsen.length > 0) {
       return res.status(200).json(successResponse('Kamu sudah absen hari ini'));
     }
 
-    // 6. Hitung status ontime atau late
-    const jamMulaiDate = dayjs(`${tanggalStr}T${jam_mulai}`).tz('Asia/Makassar');
-    const batasOntimeDate = jamMulaiDate.add(15, 'minute');
-
-    let status;
-    if (waktuScan.isBefore(jamMulaiDate)) {
+    // --- [5] Validasi waktu absensi ---
+    if (waktuScan.isBefore(jamMulai)) {
       return res.status(403).json(errorResponse('Absensi terlalu awal'));
-    } else if (waktuScan.isBefore(batasOntimeDate) || waktuScan.isSame(batasOntimeDate)) {
-      status = 'ontime';
-    } else {
-      status = 'late';
     }
 
-    // 7. Simpan Absensi
-    const checkOutStr = `${tanggalStr}T${jam_selesai}`;
+    const batasOntime = jamMulai.add(15, 'minute');
+    const status = waktuScan.isBefore(batasOntime) || waktuScan.isSame(batasOntime)
+      ? 'ontime'
+      : 'late';
+
+    // --- [6] Simpan absensi (UTC) ---
     const absensi = await Absensi.create({
       mahasiswa_id,
       jadwal_id,
-      check_in: timestamp, // biarkan ISO asli dari ESP32
-      check_out: checkOutStr,
+      check_in: waktuScan.utc().toDate(),
+      check_out: jamSelesai.utc().toDate(),
       status,
       modified_by: null
     });
 
+    // --- [7] Broadcast dan respons ---
     const absensiData = {
       nama,
       status,
@@ -101,14 +94,14 @@ exports.submitAbsensi = async (req, res) => {
 
     broadcastAbsensiData(absensiData);
     return res.status(200).json(successResponse('Absen Berhasil', absensiData));
-
   } catch (error) {
     console.error('[ERROR] submitAbsensi:', error);
     return res.status(500).json(errorResponse('Server error'));
   }
 };
 
-exports.getAllAbsensi = async (req, res) => {
+// ===== [GET] SEMUA ABSENSI =====
+exports.getAllAbsensi = async (_req, res) => {
   try {
     const data = await Absensi.getAll();
     return res.status(200).json(successResponse('Data absensi berhasil diambil', data));
@@ -118,7 +111,8 @@ exports.getAllAbsensi = async (req, res) => {
   }
 };
 
-exports.getAbsensi = async (req, res) => {
+// ===== [GET] ABSENSI TERBARU =====
+exports.getAbsensi = async (_req, res) => {
   try {
     const data = await Absensi.getLatest();
     return res.status(200).json(successResponse('Data absensi terbaru berhasil diambil', data));
@@ -128,7 +122,8 @@ exports.getAbsensi = async (req, res) => {
   }
 };
 
-exports.getTotalAbsen = async (req, res) => {
+// ===== [GET] TOTAL ABSENSI HARI INI =====
+exports.getTotalAbsen = async (_req, res) => {
   try {
     const total = await Absensi.getTotal();
     return res.status(200).json(successResponse('Total absensi hari ini berhasil diambil', total));
