@@ -25,7 +25,6 @@ exports.submitAbsensi = async (req, res) => {
     const waktuScan = new Date(timestamp);
     const tanggalStr = timestamp.split('T')[0];
 
-    // Pastikan hari dari enum cocok dengan database (gunakan lowercase)
     const hari = waktuScan.toLocaleString('id-ID', { weekday: 'long' }).replace(/^\w/, c => c.toUpperCase());
     console.log('[WAKTU] Scan:', waktuScan.toLocaleString(), '| Hari:', hari);
 
@@ -55,14 +54,14 @@ exports.submitAbsensi = async (req, res) => {
       console.log('[CHECK-OUT] Absensi ID:', pendingRows[0].id);
       await Absensi.updateCheckout({
         id: pendingRows[0].id,
-        check_out: timestamp,
+        check_out: new Date(timestamp),
         modified_by: null // sistem, tidak diedit oleh user
       });
       console.log('[CHECK-OUT] Berhasil untuk:', mahasiswa.nama);
       const absensiData = {
         nama: mahasiswa.nama,
         status: 'checkout',
-        waktu: timestamp,
+        waktu: new Date(timestamp),
         jenis: 'check-out',
         mata_kuliah: jadwalAktif.nama_mk
       };
