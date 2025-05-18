@@ -64,8 +64,8 @@ exports.submitAbsensi = async (req, res) => {
     }
 
     // 6. Hitung status ontime atau late
-    const jamMulaiDate = combineDateTime(tanggalStr, jam_mulai);
-    const batasOntimeDate = combineDateTime(tanggalStr, addMenitToTime(jam_mulai, 15));
+    const jamMulaiDate = new Date(`${tanggalStr}T${j.jam_mulai}`);
+    const batasOntimeDate = new Date(`${tanggalStr}T${addMenitToTime(j.jam_mulai, 15)}`);
 
     let status;
     if (waktuScan < jamMulaiDate) {
