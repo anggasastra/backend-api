@@ -48,8 +48,8 @@ exports.submitAbsensi = async (req, res) => {
     console.log("Jadwal:");
     // 4. Cari jadwal aktif berdasar jam, dengan waktu jadwal pakai offset +08:00
     const jadwalAktif = jadwalRows.find(j => {
-      const jamMulai = combineDate(tanggalStr, j.jam_mulai);
-      const jamSelesai = combineDate(tanggalStr, j.jam_selesai);
+      const jamMulai = new Date(`${tanggalStr}T${j.jam_mulai}`);
+      const jamSelesai = new Date(`${tanggalStr}T${j.jam_selesai}`);
       return waktuScan >= jamMulai && waktuScan <= jamSelesai;
     });
 
