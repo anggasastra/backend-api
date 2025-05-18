@@ -9,6 +9,10 @@ function addMenitToTime(timeStr, menit) {
   return date.toTimeString().split(' ')[0]; // format: HH:mm:ss
 }
 
+function formatDateToMySQL(date) {
+  return date.toISOString().slice(0, 19).replace('T', ' ');
+}
+
 exports.submitAbsensi = async (req, res) => {
   const { uid, deviceId, timestamp } = req.body;
 
@@ -80,8 +84,8 @@ exports.submitAbsensi = async (req, res) => {
     const absensi = await Absensi.create({
       mahasiswa_id,
       jadwal_id,
-      check_in: new Date(timestamp).toISOString(),
-      check_out: new Date(`${tanggalStr}T${jam_selesai}`).toISOString(),
+      check_in: formatDateToMySQL(new Date(timestamp)),
+      check_out: formatDateToMySQL(new Date(`${tanggalStr}T${jam_selesai}`)),
       status,
       modified_by: null
     });
@@ -89,7 +93,7 @@ exports.submitAbsensi = async (req, res) => {
     const absensiData = {
       nama,
       status,
-      waktu: new Date(timestamp).toISOString(),
+      waktu: timestamp,
       jenis: 'check-in',
       mata_kuliah: matkul_id
     };
