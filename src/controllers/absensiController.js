@@ -80,8 +80,8 @@ exports.submitAbsensi = async (req, res) => {
     const absensi = await Absensi.create({
       mahasiswa_id,
       jadwal_id,
-      check_in: timestamp,                            // sudah termasuk offset +08:00
-      check_out: `${tanggalStr}T${jam_selesai}`, // tambahkan offset +08:00 di check_out
+      check_in: new Date(timestamp).toISOString(),
+      check_out: new Date(`${tanggalStr}T${jam_selesai}`).toISOString(),
       status,
       modified_by: null
     });
@@ -89,7 +89,7 @@ exports.submitAbsensi = async (req, res) => {
     const absensiData = {
       nama,
       status,
-      waktu: timestamp,
+      waktu: new Date(timestamp).toISOString(),
       jenis: 'check-in',
       mata_kuliah: matkul_id
     };
