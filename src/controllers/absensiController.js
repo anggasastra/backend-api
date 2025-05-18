@@ -2,11 +2,20 @@ const { Mahasiswa, Jadwal, Absensi } = require('../models');
 const { successResponse, errorResponse } = require('../utils/responseHelper');
 const { broadcastAbsensiData } = require('../socket');
 
-// Fungsi bantu: tambah menit ke waktu HH:mm:ss, hasil tetap HH:mm:ss
+const dayjs = require('dayjs');
+const utc = require('dayjs/plugin/utc');
+const timezone = require('dayjs/plugin/timezone');
+require('dayjs/locale/id');
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.locale('id');
+
+// Fungsi bantu: tambah menit ke waktu HH:mm:ss
 function addMenitToTime(timeStr, menit) {
   const [h, m, s] = timeStr.split(':').map(Number);
-  const date = new Date(1970, 0, 1, h, m + menit, s || 0);
-  return date.toTimeString().split(' ')[0]; // format: HH:mm:ss
+  const newTime = dayjs().hour(h).minute(m).second(s).add(menit, 'minute');
+  return newTime.format('HH:mm:ss');
 }
 
 exports.submitAbsensi = async (req, res) => {
@@ -20,33 +29,31 @@ exports.submitAbsensi = async (req, res) => {
   }
 
   try {
-    // 1. Ambil data mahasiswa berdasarkan uid
     const mhsResult = await Mahasiswa.findByUID(uid);
     if (mhsResult.length === 0) {
       return res.status(404).json(errorResponse('Kamu Bukan Mahasiswa'));
     }
+
     const mahasiswa = mhsResult[0];
     const { id: mahasiswa_id, nama, prodi_id, semester_id } = mahasiswa;
 
-    // 2. Parsing waktu scan dari device (diasumsikan sudah include offset +08:00)
-    const waktuScan = new Date(timestamp);
-    const tanggalStr = timestamp.split('T')[0];
-    // Ambil hari dalam bahasa Indonesia (misal "Senin")
-    const hari = waktuScan.toLocaleString('id-ID', { weekday: 'long' }).replace(/^\w/, c => c.toUpperCase());
+    // Parsing waktu dari timestamp + waktu Jakarta
+    const waktuScan = dayjs(timestamp).tz('Asia/Jakarta');
+    const tanggalStr = waktuScan.format('YYYY-MM-DD');
+    const hari = waktuScan.format('dddd'); // e.g., 'Senin'
 
-    // 3. Ambil jadwal sesuai ruangan, hari, prodi, semester
     const jadwalRows = await Jadwal.getAll({ ruangan: deviceId, hari, prodi_id, semester_id });
     if (jadwalRows.length === 0) {
       return res.status(403).json(errorResponse('Tidak ada jadwal'));
     }
 
-    console.log("Waktu Scan:", waktuScan.toISOString());
+    console.log("Waktu Scan:", waktuScan.format());
     console.log("Jadwal:");
-    // 4. Cari jadwal aktif berdasar jam, dengan waktu jadwal pakai offset +08:00
+
     const jadwalAktif = jadwalRows.find(j => {
-      const jamMulai = new Date(`${tanggalStr}T${j.jam_mulai}+08:00`);
-      const jamSelesai = new Date(`${tanggalStr}T${j.jam_selesai}+08:00`);
-      return waktuScan >= jamMulai && waktuScan <= jamSelesai;
+      const jamMulai = dayjs(`${tanggalStr}T${j.jam_mulai}`).tz('Asia/Jakarta');
+      const jamSelesai = dayjs(`${tanggalStr}T${j.jam_selesai}`).tz('Asia/Jakarta');
+      return waktuScan.isAfter(jamMulai.subtract(1, 'minute')) && waktuScan.isBefore(jamSelesai.add(1, 'minute'));
     });
 
     if (!jadwalAktif) {
@@ -55,7 +62,6 @@ exports.submitAbsensi = async (req, res) => {
 
     const { id: jadwal_id, matkul_id, jam_mulai, jam_selesai } = jadwalAktif;
 
-    // 5. Cek apakah sudah absen hari ini (tanggal lokal berdasarkan waktuScan)
     const absensiHariIni = await Absensi.findByMahasiswaJadwalDate({
       mahasiswa_id,
       jadwal_id,
@@ -66,22 +72,24 @@ exports.submitAbsensi = async (req, res) => {
       return res.status(200).json(successResponse('Kamu sudah absen hari ini'));
     }
 
-    // 6. Tentukan status (ontime / late)
-    const jamMulaiDate = new Date(`${tanggalStr}T${jam_mulai}+08:00`);
-    const batasOntimeDate = new Date(`${tanggalStr}T${addMenitToTime(jam_mulai, 15)}+08:00`);
+    // Penentuan status
+    const jamMulaiDate = dayjs(`${tanggalStr}T${jam_mulai}`).tz('Asia/Jakarta');
+    const batasOntime = jamMulaiDate.add(15, 'minute');
 
-    if (waktuScan < jamMulaiDate) {
+    if (waktuScan.isBefore(jamMulaiDate)) {
       return res.status(403).json(errorResponse('Absensi terlalu awal'));
     }
 
-    const status = waktuScan <= batasOntimeDate ? 'ontime' : 'late';
+    const status = waktuScan.isSameOrBefore(batasOntime) ? 'ontime' : 'late';
 
-    // 7. Simpan ke database dengan waktu check_in & check_out lengkap dengan offset +08:00
+    const checkInTime = waktuScan.format(); // ISO format waktu lokal
+    const checkOutTime = dayjs(`${tanggalStr}T${jam_selesai}`).tz('Asia/Jakarta').format();
+
     const absensi = await Absensi.create({
       mahasiswa_id,
       jadwal_id,
-      check_in: timestamp,                            // sudah termasuk offset +08:00
-      check_out: `${tanggalStr}T${jam_selesai}+08:00`, // tambahkan offset +08:00 di check_out
+      check_in: checkInTime,
+      check_out: checkOutTime,
       status,
       modified_by: null
     });
@@ -89,7 +97,7 @@ exports.submitAbsensi = async (req, res) => {
     const absensiData = {
       nama,
       status,
-      waktu: timestamp,
+      waktu: checkInTime,
       jenis: 'check-in',
       mata_kuliah: matkul_id
     };
