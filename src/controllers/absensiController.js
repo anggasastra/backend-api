@@ -2,15 +2,11 @@ const { Mahasiswa, Jadwal, Absensi } = require('../models');
 const { successResponse, errorResponse } = require('../utils/responseHelper');
 const { broadcastAbsensiData } = require('../socket');
 
-function combineDate(dateStr, timeStr) {
-  return new Date(`${dateStr}T${timeStr}`);
-}
-
 // Fungsi bantu: tambah menit ke waktu HH:mm:ss, hasil tetap HH:mm:ss
 function addMenitToTime(timeStr, menit) {
   const [h, m, s] = timeStr.split(':').map(Number);
   const date = new Date(1970, 0, 1, h, m + menit, s || 0);
-  return date.toTimeString().split(' ')[0]; // Format: HH:mm:ss
+  return date.toTimeString().split(' ')[0]; // format: HH:mm:ss
 }
 
 exports.submitAbsensi = async (req, res) => {
@@ -71,8 +67,8 @@ exports.submitAbsensi = async (req, res) => {
     }
 
     // 6. Tentukan status (ontime / late)
-    const jamMulaiDate = combineDate(tanggalStr, jam_mulai);
-    const batasOntimeDate = combineDate(tanggalStr, addMenitToTime(jam_mulai, 15));
+    const jamMulaiDate = new Date(`${tanggalStr}T${jam_mulai}+08:00`);
+    const batasOntimeDate = new Date(`${tanggalStr}T${addMenitToTime(jam_mulai, 15)}+08:00`);
 
     if (waktuScan < jamMulaiDate) {
       return res.status(403).json(errorResponse('Absensi terlalu awal'));
