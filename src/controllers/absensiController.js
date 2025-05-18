@@ -57,6 +57,15 @@ exports.submitAbsensi = async (req, res) => {
     const jamMulai = dayjs(`${tanggalStr}T${jam_mulai}`).tz('Asia/Makassar');
     const jamSelesai = dayjs(`${tanggalStr}T${jam_selesai}`).tz('Asia/Makassar');
 
+    if (!waktuScan.isAfter(jamMulai)) {
+      console.log('[DEBUG] Absensi terlalu awal');
+      return res.status(403).json(errorResponse('Absensi terlalu awal'));
+    }
+    if (!waktuScan.isBefore(jamSelesai)) {
+      console.log('[DEBUG] Absensi sudah lewat');
+      return res.status(403).json(errorResponse('Absensi sudah berakhir'));
+    }
+
     // --- [4] Cek apakah sudah absen ---
     const sudahAbsen = await Absensi.findByMahasiswaJadwalDate({ mahasiswa_id, jadwal_id, date: tanggalStr });
     if (sudahAbsen.length > 0) {
@@ -77,7 +86,7 @@ exports.submitAbsensi = async (req, res) => {
     const absensi = await Absensi.create({
       mahasiswa_id,
       jadwal_id,
-      check_in: waktuScan.utc().toDate(),
+      check_in: dayjs.utc().toDate(),
       check_out: jamSelesai.utc().toDate(),
       status,
       modified_by: null
