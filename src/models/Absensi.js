@@ -6,7 +6,7 @@ const timezone = require('dayjs/plugin/timezone');
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-const tz = 'Asia/Makassar'; // WITA = GMT+8
+const tz = 'Asia/Makassar';
 
 const Absensi = {
   getAll: async () => {
