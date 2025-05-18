@@ -38,7 +38,7 @@ exports.submitAbsensi = async (req, res) => {
     const { id: mahasiswa_id, nama, prodi_id, semester_id } = mahasiswa;
 
     // Parsing waktu dari timestamp + waktu Jakarta
-    const waktuScan = dayjs(timestamp).tz('Asia/Jakarta');
+    const waktuScan = dayjs(timestamp).tz('Asia/Makassar');
     const tanggalStr = waktuScan.format('YYYY-MM-DD');
     const hari = waktuScan.format('dddd'); // e.g., 'Senin'
 
