@@ -31,7 +31,7 @@ exports.submitAbsensi = async (req, res) => {
     const { id: mahasiswa_id, nama, prodi_id, semester_id } = mahasiswa;
 
     // --- [2] Konversi waktu UTC ke GMT+8 (lokal) ---
-    const waktuScan = dayjs.utc(timestamp).tz('Asia/Makassar');
+    const waktuScan = dayjs.utc(timestamp);
     const tanggalStr = waktuScan.format('YYYY-MM-DD');
     const hari = waktuScan.format('dddd');
     console.log('[DEBUG] waktuScan:', waktuScan.format());
