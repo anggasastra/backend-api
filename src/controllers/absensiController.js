@@ -26,7 +26,7 @@ exports.submitAbsensi = async (req, res) => {
     const tanggalStr = timestamp.split('T')[0];
 
     // Pastikan hari dari enum cocok dengan database (gunakan lowercase)
-    const hari = waktuScan.toLocaleString('id-ID', { weekday: 'long' }).toLowerCase();
+    const hari = waktuScan.toLocaleString('id-ID', { weekday: 'long' }).replace(/^\w/, c => c.toUpperCase());
     console.log('[WAKTU] Scan:', waktuScan.toLocaleString(), '| Hari:', hari);
 
     const jadwalRows = await Jadwal.getAll({ ruangan: deviceId, hari });
