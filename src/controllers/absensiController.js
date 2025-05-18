@@ -33,9 +33,8 @@ exports.submitAbsensi = async (req, res) => {
     const { id: mahasiswa_id, nama, prodi_id, semester_id } = mahasiswa;
 
     // 2. Parsing waktu scan dari device (diasumsikan sudah include offset +08:00)
-    const waktuScan = new Date(timestamp).toISOString();
+    const waktuScan = formatDateToMySQL(new Date(timestamp));
     const tanggalStr = timestamp.split('T')[0];
-    // Ambil hari dalam bahasa Indonesia (misal "Senin")
     const hari = waktuScan.toLocaleString('id-ID', { weekday: 'long' }).replace(/^\w/, c => c.toUpperCase());
 
     // 3. Ambil jadwal sesuai ruangan, hari, prodi, semester
@@ -46,7 +45,7 @@ exports.submitAbsensi = async (req, res) => {
 
     console.log("Waktu Scan:", waktuScan.toISOString());
     console.log("Jadwal:");
-
+    
     const jadwalAktif = jadwalRows.find(j => {
       const jamMulai = new Date(`${tanggalStr}T${j.jam_mulai}`);
       const jamSelesai = new Date(`${tanggalStr}T${j.jam_selesai}`);
