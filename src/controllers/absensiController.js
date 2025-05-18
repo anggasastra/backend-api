@@ -9,6 +9,7 @@ const timezone = require('dayjs/plugin/timezone');
 const localeID = require('dayjs/locale/id');
 dayjs.extend(utc);
 dayjs.extend(timezone);
+dayjs.locale('id');
 
 exports.submitAbsensi = async (req, res) => {
   const { uid, deviceId, timestamp } = req.body;
